@@ -28,11 +28,19 @@ python-docx
    ```
    pip install flask python-docx
    ```
-3. Rulați aplicația:
+3. Rulați aplicația in folderul:
    ```
    python app.py
    ```
-4. Accesați aplicația în browser la adresa: http://127.0.0.1:5001
+
+1. Intri in directorul in care ai aplicatia  app.py
+2. Deschizi CMD in director si scrii    python app.py
+3. Trebuie sa iti apara sa ceva in CMD:
+4. 
+	- Deschideți browserul web
+	- Accesați aplicația în browser la adresa: http://127.0.0.1:5001 sau alternativa  http://127.0.0.1:5000
+	- Veți vedea interfața web a aplicației de conversie a codului Python în documente Word
+	- Puteți introduce cod Python, încărca exemplul sau șterge conținutul
 
 ## Structura proiectului
 - `app.py` - Serverul Flask care gestionează rutele și execuția codului Python
