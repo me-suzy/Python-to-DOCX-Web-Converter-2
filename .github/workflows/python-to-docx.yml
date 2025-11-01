@@ -1,0 +1,149 @@
+name: Python to DOCX Converter
+
+on:
+  workflow_dispatch:
+    inputs:
+      python_file:
+        description: 'Path to Python file to convert'
+        required: true
+        type: string
+  push:
+    paths:
+      - '**.py'
+  repository_dispatch:
+    types: [convert-python]
+
+jobs:
+  convert:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install python-docx
+
+      - name: Find Python files
+        id: find-files
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "file=${{ github.event.inputs.python_file }}" >> $GITHUB_OUTPUT
+          else
+            echo "file=$(find . -name '*.py' -not -path './.git/*' -not -path './venv/*' | head -1)" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Modify and execute Python code
+        id: convert
+        run: |
+          PYTHON_FILE="${{ steps.find-files.outputs.file }}"
+          
+          if [ ! -f "$PYTHON_FILE" ]; then
+            echo "Eroare: Fișierul $PYTHON_FILE nu a fost găsit!"
+            exit 1
+          fi
+          
+          echo "Procesez fișierul: $PYTHON_FILE"
+          
+          # Creez un script temporar care modifică codul pentru a salva în output.docx
+          cat > /tmp/execute_conversion.py << 'EOF'
+          import sys
+          import os
+          from docx import Document
+          
+          # Citim codul sursă
+          with open(sys.argv[1], 'r', encoding='utf-8') as f:
+              source_code = f.read()
+          
+          # Eliminăm linii de save existente
+          lines = source_code.split('\n')
+          filtered_lines = []
+          for line in lines:
+              if 'doc.save(' not in line.lower() and 'document.save(' not in line.lower():
+                  filtered_lines.append(line)
+          
+          modified_code = '\n'.join(filtered_lines)
+          
+          # Executăm codul într-un namespace izolat
+          namespace = {
+              'Document': Document,
+              '__builtins__': __builtins__,
+              '__name__': '__main__',
+              '__file__': sys.argv[1]
+          }
+          
+          # Importăm modulele necesare
+          exec('from docx import Document', namespace)
+          exec('from docx.shared import Pt, RGBColor', namespace)
+          exec('from docx.enum.text import WD_ALIGN_PARAGRAPH', namespace)
+          
+          try:
+              # Executăm codul modificat
+              exec(modified_code, namespace)
+              
+              # Găsim variabila doc sau document
+              doc = None
+              if 'doc' in namespace:
+                  doc = namespace['doc']
+              elif 'document' in namespace:
+                  doc = namespace['document']
+              elif 'd' in namespace:
+                  doc = namespace['d']
+              else:
+                  # Căutăm orice variabilă de tip Document
+                  for key, value in namespace.items():
+                      if isinstance(value, Document):
+                          doc = value
+                          break
+              
+              if doc is None:
+                  raise ValueError("Nu s-a găsit nicio variabilă Document în cod!")
+              
+              # Salvăm documentul
+              output_file = os.path.join(os.path.dirname(sys.argv[1]), 'output.docx')
+              doc.save(output_file)
+              print(f"SUCCESS: Documentul a fost generat la: {output_file}")
+              print(f"OUTPUT_FILE={output_file}")
+              
+          except Exception as e:
+              print(f"ERROR: {str(e)}", file=sys.stderr)
+              sys.exit(1)
+          EOF
+          
+          python /tmp/execute_conversion.py "$PYTHON_FILE"
+          
+          # Găsim fișierul output.docx
+          OUTPUT_FILE="$(dirname "$PYTHON_FILE")/output.docx"
+          if [ ! -f "$OUTPUT_FILE" ]; then
+            OUTPUT_FILE="./output.docx"
+          fi
+          
+          if [ -f "$OUTPUT_FILE" ]; then
+            echo "output_file=$OUTPUT_FILE" >> $GITHUB_OUTPUT
+          else
+            echo "Eroare: Fișierul DOCX nu a fost generat!"
+            exit 1
+          fi
+
+      - name: Upload DOCX artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: generated-docx
+          path: ${{ steps.convert.outputs.output_file }}
+
+      - name: Create Release with DOCX
+        if: github.event_name == 'workflow_dispatch'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ${{ steps.convert.outputs.output_file }}
+          tag_name: "docx-${{ github.sha }}"
+          name: "Generated DOCX Document"
+          body: "Document DOCX generat din fișierul Python: ${{ steps.find-files.outputs.file }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

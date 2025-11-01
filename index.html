@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python to DOCX Converter - GitHub</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🐍 Python to DOCX Converter</h1>
+            <p class="subtitle">Convertește cod Python în documente Word (.docx) direct în browser</p>
+        </header>
+
+        <div class="main-content">
+            <div class="upload-section">
+                <h2>Opțiuni de introducere</h2>
+                <div class="input-methods">
+                    <button id="uploadBtn" class="btn btn-secondary">📁 Încarcă fișier .py</button>
+                    <input type="file" id="fileInput" accept=".py" style="display: none;">
+                    <button id="exampleBtn" class="btn btn-secondary">📝 Exemplu cod</button>
+                    <button id="clearBtn" class="btn btn-secondary">🗑️ Șterge</button>
+                </div>
+            </div>
+
+            <div class="editor-section">
+                <h2>Editor Cod Python</h2>
+                <textarea id="pythonCode" placeholder="Introduceți sau lipiți aici codul Python care generează documente Word...&#10;&#10;Exemplu:&#10;from docx import Document&#10;doc = Document()&#10;doc.add_paragraph('Hello World!')&#10;doc.save('output.docx')"></textarea>
+            </div>
+
+            <div class="info-section">
+                <div class="info-box">
+                    <h3>ℹ️ Instrucțiuni</h3>
+                    <ul>
+                        <li>Codul Python trebuie să folosească biblioteca <code>python-docx</code></li>
+                        <li>Nu includeți linia <code>doc.save('nume_fisier.docx')</code> - aplicația o adaugă automat</li>
+                        <li>Documentul generat va fi descărcat automat după execuție</li>
+                        <li>Toate erorile vor fi afișate în consolă</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="actions-section">
+                <button id="executeBtn" class="btn btn-primary">
+                    <span id="btnText">▶️ Execută codul și descarcă DOCX</span>
+                    <span id="loadingSpinner" class="spinner" style="display: none;">⏳</span>
+                </button>
+            </div>
+
+            <div id="statusMessage" class="status-message" style="display: none;"></div>
+
+            <div id="errorBox" class="error-box" style="display: none;"></div>
+        </div>
+
+        <footer>
+            <p>Funcționează complet în browser folosind Pyodide. Nu necesită server backend.</p>
+            <p><a href="https://github.com/me-suzy/Python-to-DOCX-Web-Converter-2" target="_blank">GitHub Repository</a></p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
+
